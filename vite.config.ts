@@ -6,10 +6,6 @@ import { resolve } from "path";
 const host = process.env.TAURI_DEV_HOST;
 const src = resolve(__dirname, "./src");
 
-// The UI is copied from the Handy app, which calls a Tauri backend through
-// @tauri-apps/* packages and @/bindings. aivision has no backend, so we alias
-// every Tauri module to a local mock (src/mock/*) that returns canned data and
-// drives an in-memory event bus. Order matters: specific specifiers first.
 const tauriAliases = [
   { find: "@tauri-apps/api/core", replacement: resolve(src, "mock/core.ts") },
   { find: "@tauri-apps/api/event", replacement: resolve(src, "mock/event.ts") },

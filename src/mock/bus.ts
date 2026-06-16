@@ -1,10 +1,5 @@
 /**
  * In-memory event bus that mimics @tauri-apps/api/event.
- *
- * The copied Handy UI talks to a Tauri backend through `listen`/`emit`. Since
- * aivision has no backend, this bus lets the mock command implementations
- * (src/mock/core.ts) drive the exact same UI flows the real backend would —
- * e.g. model download progress events and the recording overlay's mic levels.
  */
 export type MockEvent<T> = { event: string; id: number; payload: T };
 type Handler<T = unknown> = (event: MockEvent<T>) => void;
