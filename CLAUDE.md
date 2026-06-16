@@ -28,9 +28,11 @@ There is no lint or test script configured.
 ## Architecture
 
 ### Two frontend entry points
+
 `vite.config.ts` defines a multi-page build: `index.html` (main settings app) and `src/overlay/index.html` (recording overlay).
 
 ### The mock layer (the central concept)
+
 The UI reaches its backend through two narrow funnels: `@/bindings` (a tauri-specta-generated `commands` object + TS types) and a handful of `@tauri-apps/*` plugin imports. Instead of a real backend, those funnels are intercepted by mocks, so the UI renders and is interactive using in-memory state:
 
 - **`src/bindings.ts`** — the generated bindings, kept as-is. Every `commands.*` call funnels through `invoke()` imported from `@tauri-apps/api/core`.
@@ -49,6 +51,7 @@ The Zustand stores (`src/stores/settingsStore.ts`, `modelStore.ts`) and the `use
 - `src/App.css` — Tailwind v4 `@import "tailwindcss"` + `@theme` design tokens (light/dark via `prefers-color-scheme`); the visual foundation the components' classes depend on.
 
 ### Rust backend (`src-tauri/`)
+
 The minimal starter (`greet` command + `tauri-plugin-opener`). It is **not used by the frontend** — everything is mocked — so no Rust commands/plugins need to be registered. `tauri.conf.json` keeps `productName: aivision`, an 800×600 window, and bun before-commands.
 
 ## Conventions / gotchas
@@ -56,7 +59,6 @@ The minimal starter (`greet` command + `tauri-plugin-opener`). It is **not used 
 - **To extend the UI with another component**, add it; it will work as long as the mock layer satisfies its `commands.*`/plugin calls. If it needs a new getter that returns data, add a case to `src/mock/core.ts`'s `invoke` switch — otherwise unknown commands fall through to the no-op default.
 - **Do not wire up real Tauri Rust plugins.** The frontend is intentionally backed by the mock layer. Adding real backend behavior is out of scope unless explicitly requested.
 - **`@` → `src`** path alias; **`@tauri-apps/*` → `src/mock/*`** (runtime only).
-- **i18n = en/ru only** for the app UI. The separate *transcription-language* dropdown (`src/components/settings/LanguageSelector.tsx` + `src/lib/constants/languages.ts`) keeps a full ~99-language list as mock feature data — it is not UI translation.
+- **i18n = en/ru only** for the app UI. The separate _transcription-language_ dropdown (`src/components/settings/LanguageSelector.tsx` + `src/lib/constants/languages.ts`) keeps a full ~99-language list as mock feature data — it is not UI translation.
 - TypeScript is strict but `noUnusedLocals`/`noUnusedParameters` are off (the generated `bindings.ts` needs that). `bun run build` runs `tsc` — keep it clean.
 - Vite dev server is pinned to **port 1420** (`strictPort`); ignore `src-tauri/` from HMR.
-- **Not a git repository** (no `.git`).
