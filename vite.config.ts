@@ -1,16 +1,62 @@
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { resolve } from "path";
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
+const src = resolve(__dirname, "./src");
 
-// https://vitejs.dev/config/
+// The UI is copied from the Handy app, which calls a Tauri backend through
+// @tauri-apps/* packages and @/bindings. aivision has no backend, so we alias
+// every Tauri module to a local mock (src/mock/*) that returns canned data and
+// drives an in-memory event bus. Order matters: specific specifiers first.
+const tauriAliases = [
+  { find: "@tauri-apps/api/core", replacement: resolve(src, "mock/core.ts") },
+  { find: "@tauri-apps/api/event", replacement: resolve(src, "mock/event.ts") },
+  { find: "@tauri-apps/api/app", replacement: resolve(src, "mock/app.ts") },
+  {
+    find: "@tauri-apps/api/webviewWindow",
+    replacement: resolve(src, "mock/webviewWindow.ts"),
+  },
+  { find: "@tauri-apps/plugin-os", replacement: resolve(src, "mock/os.ts") },
+  {
+    find: "@tauri-apps/plugin-opener",
+    replacement: resolve(src, "mock/opener.ts"),
+  },
+  {
+    find: "@tauri-apps/plugin-dialog",
+    replacement: resolve(src, "mock/dialog.ts"),
+  },
+  { find: "@tauri-apps/plugin-fs", replacement: resolve(src, "mock/fs.ts") },
+  {
+    find: "@tauri-apps/plugin-updater",
+    replacement: resolve(src, "mock/updater.ts"),
+  },
+  {
+    find: "@tauri-apps/plugin-process",
+    replacement: resolve(src, "mock/process.ts"),
+  },
+];
+
 export default defineConfig(async () => ({
+  plugins: [react(), tailwindcss()],
+
+  resolve: {
+    alias: [...tauriAliases, { find: "@", replacement: src }],
+  },
+
+  // Multiple entry points for main app and recording overlay
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        overlay: resolve(__dirname, "src/overlay/index.html"),
+      },
+    },
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-  //
-  // 1. prevent vite from obscuring rust errors
   clearScreen: false,
-  // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,
     strictPort: true,
@@ -23,7 +69,6 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // 3. tell vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
   },
