@@ -1,64 +1,31 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project
 
-Tauri 2 desktop app ("aivision") — React 18 + TypeScript + Tailwind CSS v4 + react-i18next. The frontend is a settings app with a recording overlay, built to run against a **mock backend layer** rather than a real Tauri command surface. App UI translation is restricted to **English (en) and Russian (ru)** only.
+Tauri 2 desktop app ("aivision") — React 18 + TypeScript + Tailwind CSS v4 + react-i18next + Zustand. A settings UI with a recording overlay, running against a **mock backend layer** instead of a real Tauri command surface. UI translation is **English (en) and Russian (ru)**.
 
 ## Commands
 
 Package manager is **bun** (Tauri's `beforeDevCommand`/`beforeBuildCommand` call `bun run`).
 
 ```bash
-bun install                # install deps
-
-bun run dev                # Vite dev server at http://localhost:1420 (primary way to view the UI)
-bun run build              # tsc (type-check, no emit) + vite build -> dist/
-bun run preview            # preview the production build
-
-bun tauri dev              # full Tauri app (Rust shell + webview); frontend still uses mocks
-bun tauri build            # production bundle
+bun install
+bun run dev          # Vite dev server at http://localhost:1420 (main UI)
+bun run build        # tsc (noEmit type-check) + vite build -> dist/
+bun tauri dev        # full Tauri app; frontend still uses mocks
+bun tauri build      # production bundle
 ```
-
-There is no lint or test script configured.
-
-> **Viewing the UI:** the simplest path is `bun run dev` then open `http://localhost:1420`. The recording overlay is a second Vite entry — open `http://localhost:1420/src/overlay/index.html` to see it.
 
 ## Architecture
 
-### Two frontend entry points
+**Two Vite entry points** (`vite.config.ts`): `index.html` (main app) + `src/overlay/index.html` (recording overlay).
 
-`vite.config.ts` defines a multi-page build: `index.html` (main settings app) and `src/overlay/index.html` (recording overlay).
+**Mock layer (central concept).** The UI's backend calls go through `@/bindings` (a tauri-specta-generated `commands` object + TS types) and `@tauri-apps/*` plugin imports. `vite.config.ts → resolve.alias` redirects every `@tauri-apps/*` module (`api/core|event|app|webviewWindow`, `plugin-os|opener|dialog|fs|updater|process`) to a stub under `src/mock/` — a **runtime** swap only; TypeScript still resolves the real types from `node_modules`. In `src/mock/core.ts`, `invoke(cmd, args)` is a switch: getters return canned data from `src/mock/state.ts`; `change_*`/`set_*`/`update_*` mutators are no-ops (the Zustand stores already apply changes optimistically); `download_model` drives the event bus. `src/mock/bus.ts` + `event.ts` back `listen`/`emit` (download progress, overlay mic levels). The Zustand stores (`src/stores/{settingsStore,modelStore}.ts`) and the `useSettings` hook run unchanged against the mock `commands`.
 
-### The mock layer (the central concept)
-
-The UI reaches its backend through two narrow funnels: `@/bindings` (a tauri-specta-generated `commands` object + TS types) and a handful of `@tauri-apps/*` plugin imports. Instead of a real backend, those funnels are intercepted by mocks, so the UI renders and is interactive using in-memory state:
-
-- **`src/bindings.ts`** — the generated bindings, kept as-is. Every `commands.*` call funnels through `invoke()` imported from `@tauri-apps/api/core`.
-- **`vite.config.ts` → `resolve.alias`** redirects each Tauri module (`@tauri-apps/api/core|event|app|webviewWindow`, `plugin-os|opener|dialog|fs|updater|process`) to a stub under `src/mock/`. TypeScript still resolves the **real types** from `node_modules`; only runtime is swapped.
-- **`src/mock/core.ts`** implements `invoke(cmd, args)` as a switch: getter commands (`get_app_settings`, `get_available_models`, `has_any_models_available`, `get_available_microphones`, …) return canned data from **`src/mock/state.ts`**; all `change_*`/`set_*`/`update_*` mutators are no-ops (the Zustand stores already apply changes optimistically to local state); `download_model` drives the event bus.
-- **`src/mock/bus.ts`** is an in-memory event bus backing `listen`/`emit` (`src/mock/event.ts`), so UI flows that react to backend events work here too — e.g. model download progress/complete (consumed by `src/stores/modelStore.ts`) and the overlay's mic levels (`src/overlay/demo.ts` seeds these).
-
-The Zustand stores (`src/stores/settingsStore.ts`, `modelStore.ts`) and the `useSettings` hook run unchanged against the mock `commands`.
-
-### Directory map
-
-- `src/components/**` — UI primitives (`ui/`), the seven settings sections (`settings/general|advanced|history|post-processing|debug|about|models`), `Sidebar`, `footer`, `onboarding`, `model-selector`, `icons`, etc.
-- `src/stores/`, `src/hooks/`, `src/lib/` (incl. `lib/utils/rtl.ts`, `lib/constants/languages.ts`).
-- `src/i18n/` — react-i18next; `locales/{en,ru}/translation.json` only; `languages.ts` trimmed to `en` + `ru`.
-- `src/mock/` — the mock layer described above.
-- `src/App.css` — Tailwind v4 `@import "tailwindcss"` + `@theme` design tokens (light/dark via `prefers-color-scheme`); the visual foundation the components' classes depend on.
-
-### Rust backend (`src-tauri/`)
-
-The minimal starter (`greet` command + `tauri-plugin-opener`). It is **not used by the frontend** — everything is mocked — so no Rust commands/plugins need to be registered. `tauri.conf.json` keeps `productName: aivision`, an 800×600 window, and bun before-commands.
+**Layout:** `src/components/**` (UI primitives `ui/`, plus 7 settings sections in `settings/{general,advanced,history,post-processing,debug,about,models}`), `src/stores/`, `src/hooks/`, `src/lib/`, `src/i18n/` (`locales/{en,ru}/translation.json`), `src/mock/`, `src/App.css` (Tailwind v4 `@theme` tokens, light/dark via `prefers-color-scheme`). **`src-tauri/`** is the minimal starter (`greet` + `tauri-plugin-opener`) — not used by the frontend, so nothing needs registering.
 
 ## Conventions / gotchas
 
-- **To extend the UI with another component**, add it; it will work as long as the mock layer satisfies its `commands.*`/plugin calls. If it needs a new getter that returns data, add a case to `src/mock/core.ts`'s `invoke` switch — otherwise unknown commands fall through to the no-op default.
-- **Do not wire up real Tauri Rust plugins.** The frontend is intentionally backed by the mock layer. Adding real backend behavior is out of scope unless explicitly requested.
-- **`@` → `src`** path alias; **`@tauri-apps/*` → `src/mock/*`** (runtime only).
-- **i18n = en/ru only** for the app UI. The separate _transcription-language_ dropdown (`src/components/settings/LanguageSelector.tsx` + `src/lib/constants/languages.ts`) keeps a full ~99-language list as mock feature data — it is not UI translation.
-- TypeScript is strict but `noUnusedLocals`/`noUnusedParameters` are off (the generated `bindings.ts` needs that). `bun run build` runs `tsc` — keep it clean.
-- Vite dev server is pinned to **port 1420** (`strictPort`); ignore `src-tauri/` from HMR.
+- **Adding a component** works as long as the mock layer satisfies its `commands.*`/plugin calls. A new getter returning data needs a case in `src/mock/core.ts`'s `invoke` switch; unknown commands fall through to the no-op default.
+- **Do not wire up real Tauri Rust plugins.** The frontend is intentionally mocked; real backend is out of scope unless explicitly requested.
+- **Aliases:** `@` → `src`; `@tauri-apps/*` → `src/mock/*` (runtime only).
+- **i18n = en/ru only** for the UI. The separate transcription-language dropdown (`settings/LanguageSelector.tsx` + `lib/constants/languages.ts`) keeps a full ~99-language list as mock feature data — it is not UI translation.
+- `tsc` is strict but `noUnusedLocals`/`noUnusedParameters` are off (`bindings.ts` needs that); keep `bun run build` clean. Vite dev server is pinned to **port 1420** (`strictPort`); `src-tauri/` is ignored from HMR.
