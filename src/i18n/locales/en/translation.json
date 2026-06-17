@@ -425,7 +425,7 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of Handy"
+        "description": "Automatically check for new versions of AiVision"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -493,7 +493,7 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Handy"
+        "description": "Current version of AiVision"
       },
       "appDataDirectory": {
         "title": "App Data Directory",
@@ -506,7 +506,7 @@
       },
       "supportDevelopment": {
         "title": "Support Development",
-        "description": "Help us continue building Handy",
+        "description": "Help us continue building AiVision",
         "button": "Donate"
       },
       "acknowledgments": {

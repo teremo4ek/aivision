@@ -156,7 +156,7 @@
     "general": {
       "title": "Общие",
       "shortcut": {
-        "title": "Ярлыки Handy",
+        "title": "Ярлыки AiVision",
         "description": "Настройте сочетания клавиш для запуска записи речи в текст",
         "loading": "Загрузка ярлыков...",
         "none": "Ярлыки не настроены",
@@ -425,7 +425,7 @@
       },
       "updateChecks": {
         "label": "Проверять наличие обновлений",
-        "description": "Автоматически проверять наличие новых версий Handy"
+        "description": "Автоматически проверять наличие новых версий AiVision"
       },
       "soundTheme": {
         "label": "Звуковая тема",
@@ -493,7 +493,7 @@
       "title": "О программе",
       "version": {
         "title": "Версия",
-        "description": "Текущая версия Handy"
+        "description": "Текущая версия AiVision"
       },
       "appDataDirectory": {
         "title": "Каталог данных приложения",
@@ -506,7 +506,7 @@
       },
       "supportDevelopment": {
         "title": "Поддержка развития",
-        "description": "Помогите нам продолжать развитие Handy",
+        "description": "Помогите нам продолжать развитие AiVision",
         "button": "Поддержать"
       },
       "acknowledgments": {
@@ -570,7 +570,7 @@
   },
   "appLanguage": {
     "title": "Язык приложения",
-    "description": "Изменить язык интерфейса Handy"
+    "description": "Изменить язык интерфейса AiVision"
   },
   "overlay": {
     "transcribing": "Расшифровка...",
