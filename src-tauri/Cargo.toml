@@ -22,4 +22,16 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+log = "0.4"
+
+# Plugins the frontend talks to directly via @tauri-apps/plugin-*.
+# These must be registered in lib.rs and granted in capabilities/default.json,
+# otherwise the JS calls (os.platform, dialog.open, fs.read*, process.relaunch,
+# updater.check) error under the real backend.
+tauri-plugin-log = "2"
+tauri-plugin-os = "2"
+tauri-plugin-dialog = "~2.6"
+tauri-plugin-fs = "~2.4"
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"
 

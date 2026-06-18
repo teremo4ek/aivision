@@ -6,6 +6,13 @@ import { resolve } from "path";
 const host = process.env.TAURI_DEV_HOST;
 const src = resolve(__dirname, "./src");
 
+// The Tauri CLI sets TAURI_ENV_PLATFORM while running `tauri dev`/`tauri build`
+// (via beforeDevCommand/beforeBuildCommand). Plain `bun run dev` does not, so we
+// use it to switch between the real Tauri APIs (Rust backend) and the mock layer.
+const isTauri = !!process.env.TAURI_ENV_PLATFORM;
+
+// Mock stubs that stand in for the real @tauri-apps/* packages during web-only
+// development (`bun run dev` in a browser, with no Rust backend present).
 const tauriAliases = [
   { find: "@tauri-apps/api/core", replacement: resolve(src, "mock/core.ts") },
   { find: "@tauri-apps/api/event", replacement: resolve(src, "mock/event.ts") },
@@ -38,7 +45,12 @@ export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
 
   resolve: {
-    alias: [...tauriAliases, { find: "@", replacement: src }],
+    // Under real Tauri, let imports resolve to the installed @tauri-apps/*
+    // packages so they reach the Rust command surface. Otherwise (web dev),
+    // redirect every @tauri-apps/* import to the in-memory mocks in src/mock.
+    alias: isTauri
+      ? [{ find: "@", replacement: src }]
+      : [...tauriAliases, { find: "@", replacement: src }],
   },
 
   // Multiple entry points for main app and recording overlay
